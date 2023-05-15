@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
 
 class HomePageScreen extends StatefulWidget {
@@ -44,8 +47,37 @@ class _HomePageScreenState extends State<HomePageScreen> {
   Future<void> makePayment() async {
     try {
       paymentIntentData = await createPaymentIntent('20', 'USD');
+      await Stripe.instance.initPaymentSheet(
+          paymentSheetParameters: SetupPaymentSheetParameters(
+              paymentIntentClientSecret: paymentIntentData!['client_secret'],
+              // applePay: true,
+              // googlePay: true,
+              style: ThemeMode.dark,
+              merchantDisplayName: 'Prashant'));
+      displayPaymentSheet();
     } catch (e) {
       print("Exception" + e.toString());
+    }
+  }
+
+  displayPaymentSheet() async {
+    try {
+      Stripe.instance.presentPaymentSheet(
+        parameters: PresentPaymentSheetParameters(
+          clientSecret: paymentIntentData!['client_secret'],
+          confirmPayment: true,
+        ),
+      );
+      setState(() {
+        paymentIntentData = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Successfully Paid"),
+        ),
+      );
+    } catch (e) {
+      print(e.toString());
     }
   }
 
@@ -57,8 +89,14 @@ class _HomePageScreenState extends State<HomePageScreen> {
         'payment_method_types[]': 'Card'
       };
       var response = await http.post(
-        Uri.parse('https://api.stripe.com/v1/payment_intents'),
-      );
+          Uri.parse('https://api.stripe.com/v1/payment_intents'),
+          body: body,
+          headers: {
+            'Authorization':
+                "Bearer sk_test_51N5LJMJZxnScVu3FjaOPnP4bWhFK81iM3saA9OTVZEMssYWS8cyLWUeu3KyEA0vjA6LmQ0o1izd1gxY2nZA3rgYH00LmrG7fjs",
+            'Content-Type': "application/x-www-form-urlencoded"
+          });
+      return jsonDecode(response.body.toString());
     } catch (e) {
       print("Exception" + e.toString());
     }
