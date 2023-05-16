@@ -50,8 +50,8 @@ class _HomePageScreenState extends State<HomePageScreen> {
       await Stripe.instance.initPaymentSheet(
           paymentSheetParameters: SetupPaymentSheetParameters(
               paymentIntentClientSecret: paymentIntentData!['client_secret'],
-              // applePay: true,
-              // googlePay: true,
+              applePay: true,
+              googlePay: true,
               style: ThemeMode.dark,
               merchantDisplayName: 'Prashant'));
       displayPaymentSheet();
@@ -62,7 +62,7 @@ class _HomePageScreenState extends State<HomePageScreen> {
 
   displayPaymentSheet() async {
     try {
-      Stripe.instance.presentPaymentSheet(
+      await Stripe.instance.presentPaymentSheet(
         parameters: PresentPaymentSheetParameters(
           clientSecret: paymentIntentData!['client_secret'],
           confirmPayment: true,
@@ -76,8 +76,15 @@ class _HomePageScreenState extends State<HomePageScreen> {
           content: Text("Successfully Paid"),
         ),
       );
-    } catch (e) {
+    } on StripeException catch (e) {
       print(e.toString());
+
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          content: Text("Cancelled"),
+        ),
+      );
     }
   }
 
@@ -104,6 +111,6 @@ class _HomePageScreenState extends State<HomePageScreen> {
 
   calculateAmount(String amount) {
     final price = int.parse(amount) * 100;
-    return price;
+    return price.toString();
   }
 }
